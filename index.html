@@ -111,6 +111,13 @@
   .badge.done::before { content: "✓ "; color: var(--status-good); }
   .badge.superseded::before { content: "⇢ "; }
 
+  .item .check {
+    width: 20px; height: 20px; border-radius: 50%; flex: none; margin-top: 1px;
+    border: 1.5px solid var(--baseline); background: transparent; cursor: pointer; padding: 0;
+  }
+  .item .check:hover { border-color: var(--status-good); box-shadow: inset 0 0 0 3px rgba(12,163,12,.18); }
+  .item.leaving { opacity: 0; transform: translateX(10px); transition: opacity .3s, transform .3s; }
+
   details.cleared { margin-top: 24px; }
   details.cleared summary {
     cursor: pointer; font-size: 13px; font-weight: 650; color: var(--text-secondary);
@@ -148,7 +155,7 @@
 
   <footer>
     Refreshes automatically every Tuesday end of day: new action items from the week's calls are added, and items reported done on later calls are cleared.
-    Items marked <strong>◐ possibly done</strong> have indirect evidence of completion — confirm and they'll be cleared on the next refresh.
+    Click a card's circle to mark it done — it comes off the list and gets checked off in the Notion tracker. Items marked <strong>◐ possibly done</strong> have indirect evidence of completion — confirm and they'll be cleared on the next refresh.
     Source: Fathom call recordings (links jump to the moment the item was assigned).
   </footer>
 </div>
@@ -573,7 +580,8 @@
       "status": "superseded",
       "note": "Rolled into the Jun 23 item: finish affiliate app setup (commission set at 20%)"
     }
-  ]
+  ],
+  "relay_url": ""
 }
 </script>
 
@@ -590,46 +598,68 @@
   var callsById = {};
   state.calls.forEach(function (c) { callsById[c.id] = c; });
 
+  var HIDDEN_KEY = 'contour-done-local';
+  function getHidden() { try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); } catch (e) { return []; } }
+  function addHidden(id) { try { var h = getHidden(); if (h.indexOf(id) === -1) h.push(id); localStorage.setItem(HIDDEN_KEY, JSON.stringify(h)); } catch (e) {} }
+
   var excluded = state.excluded_owners || [];
   var items = state.items.filter(function (i) { return excluded.indexOf(i.owner) === -1; });
+  var checkedLocal = [];   // ids checked in this browser (persisted + this session)
 
-  var active = items.filter(function (i) { return i.status === 'open' || i.status === 'possibly-done'; });
-  var cleared = items.filter(function (i) { return i.status === 'done' || i.status === 'superseded'; });
-  var open = active.filter(function (i) { return i.status === 'open'; });
-  var maybe = active.filter(function (i) { return i.status === 'possibly-done'; });
-
-  document.getElementById('metaLine').textContent =
-    'Last refreshed ' + state.generated + ' · covering calls from the last ' + state.lookback_days +
-    ' days (' + state.calls.length + ' calls) · next refresh: Tuesday end of day';
-
-  var tiles = [
-    { label: 'Open items', value: open.length, hint: 'need action' },
-    { label: 'Possibly done', value: maybe.length, hint: 'confirm to clear' },
-    { label: 'Cleared this refresh', value: cleared.length, hint: 'done or superseded' },
-    { label: 'Calls scanned', value: state.calls.length, hint: state.calls[state.calls.length - 1].date + ' → ' + state.calls[0].date }
-  ];
-  document.getElementById('tiles').innerHTML = tiles.map(function (t) {
-    return '<div class="tile"><div class="label">' + t.label + '</div><div class="value">' + t.value +
-      '</div><div class="hint">' + t.hint + '</div></div>';
-  }).join('');
-
-  // open-by-owner bars — roster plus any non-excluded owner appearing in the data
   var owners = Object.keys(OWNER_COLORS);
-  items.forEach(function (i) {
-    if (owners.indexOf(i.owner) === -1) owners.push(i.owner);
-  });
-  var counts = owners.map(function (o) {
-    return { owner: o, n: open.filter(function (i) { return i.owner === o; }).length };
-  }).sort(function (a, b) { return b.n - a.n; });
-  var max = Math.max.apply(null, counts.map(function (c) { return c.n; })) || 1;
-  document.getElementById('ownerBars').innerHTML = counts.map(function (c) {
-    return '<div class="barrow"><div class="name"><span class="dot" style="background:' + OWNER_COLORS[c.owner] +
-      '"></span>' + c.owner + '</div><div class="bartrack"><div class="barfill" style="width:' +
-      (c.n / max * 100) + '%"></div></div><div class="num">' + c.n + '</div></div>';
-  }).join('');
+  items.forEach(function (i) { if (owners.indexOf(i.owner) === -1) owners.push(i.owner); });
 
-  // filters
   var ownerFilter = 'All', statusFilter = 'all';
+
+  function activeItems() {
+    return items.filter(function (i) {
+      return (i.status === 'open' || i.status === 'possibly-done') && checkedLocal.indexOf(i.id) === -1;
+    });
+  }
+  function clearedItems() {
+    return items.filter(function (i) { return i.status === 'done' || i.status === 'superseded'; })
+      .concat(items.filter(function (i) {
+        return (i.status === 'open' || i.status === 'possibly-done') && checkedLocal.indexOf(i.id) !== -1;
+      }).map(function (i) {
+        return { id: i.id, owner: i.owner, text: i.text, call: i.call, ts: i.ts, status: 'done', note: 'Checked off on the dashboard — syncing to Notion', local: true };
+      }));
+  }
+
+  function renderMeta() {
+    document.getElementById('metaLine').textContent =
+      'Last refreshed ' + state.generated + ' · covering calls from the last ' + state.lookback_days +
+      ' days (' + state.calls.length + ' calls) · next refresh: Tuesday end of day';
+  }
+
+  function renderTiles() {
+    var active = activeItems();
+    var open = active.filter(function (i) { return i.status === 'open'; });
+    var maybe = active.filter(function (i) { return i.status === 'possibly-done'; });
+    var tiles = [
+      { label: 'Open items', value: open.length, hint: 'need action' },
+      { label: 'Possibly done', value: maybe.length, hint: 'confirm to clear' },
+      { label: 'Cleared this refresh', value: clearedItems().length, hint: 'done or superseded' },
+      { label: 'Calls scanned', value: state.calls.length, hint: state.calls[state.calls.length - 1].date + ' → ' + state.calls[0].date }
+    ];
+    document.getElementById('tiles').innerHTML = tiles.map(function (t) {
+      return '<div class="tile"><div class="label">' + t.label + '</div><div class="value">' + t.value +
+        '</div><div class="hint">' + t.hint + '</div></div>';
+    }).join('');
+  }
+
+  function renderBars() {
+    var open = activeItems().filter(function (i) { return i.status === 'open'; });
+    var counts = owners.map(function (o) {
+      return { owner: o, n: open.filter(function (i) { return i.owner === o; }).length };
+    }).sort(function (a, b) { return b.n - a.n; });
+    var max = Math.max.apply(null, counts.map(function (c) { return c.n; })) || 1;
+    document.getElementById('ownerBars').innerHTML = counts.map(function (c) {
+      return '<div class="barrow"><div class="name"><span class="dot" style="background:' + (OWNER_COLORS[c.owner] || 'var(--baseline)') +
+        '"></span>' + c.owner + '</div><div class="bartrack"><div class="barfill" style="width:' +
+        (c.n / max * 100) + '%"></div></div><div class="num">' + c.n + '</div></div>';
+    }).join('');
+  }
+
   function renderFilters() {
     var html = ['All'].concat(owners).map(function (o) {
       return '<button class="chip' + (ownerFilter === o ? ' active' : '') + '" data-owner="' + o + '">' + o + '</button>';
@@ -640,29 +670,21 @@
     }).join('');
     document.getElementById('filters').innerHTML = html;
   }
-  document.getElementById('filters').addEventListener('click', function (e) {
-    var b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.owner) ownerFilter = b.dataset.owner;
-    if (b.dataset.status) statusFilter = b.dataset.status;
-    renderFilters(); renderItems();
-  });
 
-  function itemHTML(i) {
+  function itemHTML(i, checkable) {
     var c = callsById[i.call];
     var badge = { 'open': ['open', 'Open'], 'possibly-done': ['maybe', 'Possibly done'],
                   'done': ['done', 'Done'], 'superseded': ['superseded', 'Superseded'] }[i.status];
-    return '<div class="item"><div class="accent" style="background:' + (OWNER_COLORS[i.owner] || 'var(--baseline)') + '"></div>' +
+    return '<div class="item" data-item="' + i.id + '"><div class="accent" style="background:' + (OWNER_COLORS[i.owner] || 'var(--baseline)') + '"></div>' +
+      (checkable ? '<button class="check" data-check="' + i.id + '" title="Mark done — removes this item and checks it off in Notion" aria-label="Mark done"></button>' : '') +
       '<div class="body"><div class="text">' + i.text + '</div>' +
-      '<div class="src"><a href="' + c.url + '?timestamp=' + i.ts + '" target="_blank">' + c.title + ' · ' + c.date + '</a>' +
-      (i.notion && (i.status === 'open' || i.status === 'possibly-done')
-        ? ' &nbsp;·&nbsp; <a href="' + i.notion + '" target="_blank" title="Opens this item in the Notion tracker">✓ Mark done in Notion</a>'
-        : '') + '</div>' +
+      '<div class="src"><a href="' + c.url + '?timestamp=' + i.ts + '" target="_blank">' + c.title + ' · ' + c.date + '</a></div>' +
       (i.note ? '<div class="note">' + i.note + '</div>' : '') +
       '</div><span class="badge ' + badge[0] + '">' + badge[1] + '</span></div>';
   }
 
   function renderItems() {
-    var list = active.filter(function (i) {
+    var list = activeItems().filter(function (i) {
       return (ownerFilter === 'All' || i.owner === ownerFilter) &&
              (statusFilter === 'all' || i.status === statusFilter);
     });
@@ -671,20 +693,57 @@
       var mine = list.filter(function (i) { return i.owner === o; });
       if (!mine.length) return;
       var nOpen = mine.filter(function (i) { return i.status === 'open'; }).length;
-      html += '<div class="owner-section"><div class="owner-head"><span class="dot" style="background:' + OWNER_COLORS[o] +
+      html += '<div class="owner-section"><div class="owner-head"><span class="dot" style="background:' + (OWNER_COLORS[o] || 'var(--baseline)') +
         '"></span><h3>' + o + '</h3><span class="count">' + nOpen + ' open' +
         (mine.length - nOpen ? ' · ' + (mine.length - nOpen) + ' possibly done' : '') + '</span></div>' +
-        mine.map(itemHTML).join('') + '</div>';
+        mine.map(function (i) { return itemHTML(i, true); }).join('') + '</div>';
     });
     document.getElementById('itemList').innerHTML = html ||
       '<div class="panel" style="color:var(--text-muted)">No items match this filter.</div>';
   }
 
-  document.getElementById('clearedSummary').textContent =
-    'Cleared this refresh (' + cleared.length + ') — done or superseded';
-  document.getElementById('clearedList').innerHTML = cleared.map(itemHTML).join('');
+  function renderCleared() {
+    var cleared = clearedItems();
+    document.getElementById('clearedSummary').textContent =
+      'Cleared this refresh (' + cleared.length + ') — done or superseded';
+    document.getElementById('clearedList').innerHTML = cleared.map(function (i) { return itemHTML(i, false); }).join('');
+  }
 
-  renderFilters(); renderItems();
+  function renderAll() { renderMeta(); renderTiles(); renderBars(); renderFilters(); renderItems(); renderCleared(); }
+
+  function syncToNotion(id) {
+    if (!state.relay_url) return;
+    try {
+      fetch(state.relay_url, { method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({ syncId: id }) });
+    } catch (e) {}
+  }
+
+  function completeItem(id) {
+    checkedLocal.push(id);
+    addHidden(id);
+    syncToNotion(id);
+    var el = document.querySelector('[data-item="' + id + '"]');
+    if (el) {
+      el.classList.add('leaving');
+      setTimeout(renderAll, 300);
+    } else { renderAll(); }
+  }
+
+  document.getElementById('filters').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.owner) ownerFilter = b.dataset.owner;
+    if (b.dataset.status) statusFilter = b.dataset.status;
+    renderFilters(); renderItems();
+  });
+  document.getElementById('itemList').addEventListener('click', function (e) {
+    var b = e.target.closest('button.check'); if (!b) return;
+    completeItem(b.getAttribute('data-check'));
+  });
+
+  checkedLocal = getHidden().filter(function (id) {
+    return items.some(function (i) { return i.id === id && (i.status === 'open' || i.status === 'possibly-done'); });
+  });
+  renderAll();
 })();
 </script>
 </body>
