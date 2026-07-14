@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contour Insoles — Action Items</title>
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* Arien */
+    --series-2: #1baf7a; /* Trung */
+    --series-3: #eda100; /* Ben */
+    --series-4: #008300; /* Kostas */
+    --series-5: #4a3aa7; /* Drew */
+    --series-6: #e34948; /* Derek */
+    --series-7: #e87ba4; /* Christian */
+    --status-warning: #fab219;
+    --status-good: #0ca30c;
+    --bar: #2a78d6;
+    --chip-bg: #f0efec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #199e70;
+      --series-3: #c98500;
+      --series-4: #008300;
+      --series-5: #9085e9;
+      --series-6: #e66767;
+      --series-7: #d55181;
+      --bar: #3987e5;
+      --chip-bg: #262624;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.45;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 24px 60px; }
+  header h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
+  header .sub { color: var(--text-secondary); font-size: 13px; }
+  header .sub a { color: inherit; }
+  .meta-line { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 22px 0 8px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .label { color: var(--text-secondary); font-size: 12px; }
+  .tile .value { font-size: 30px; font-weight: 650; margin-top: 2px; }
+  .tile .hint { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 14px; }
+  .panel h2 { font-size: 13px; font-weight: 650; margin: 0 0 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+
+  /* owner bar chart */
+  .barrow { display: grid; grid-template-columns: 150px 1fr 34px; align-items: center; gap: 10px; margin: 7px 0; }
+  .barrow .name { font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .bartrack { height: 16px; position: relative; }
+  .barfill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar); border-radius: 0 4px 4px 0; }
+  .barrow .num { font-variant-numeric: tabular-nums; color: var(--text-secondary); font-size: 13px; text-align: right; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 4px; align-items: center; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 999px; padding: 5px 13px; font-size: 13px; cursor: pointer;
+  }
+  .chip.active { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .filters .sep { width: 1px; height: 20px; background: var(--grid); margin: 0 4px; }
+
+  .owner-section { margin-top: 18px; }
+  .owner-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+  .owner-head .dot { width: 11px; height: 11px; }
+  .owner-head h3 { font-size: 15px; margin: 0; font-weight: 650; }
+  .owner-head .count { color: var(--text-muted); font-size: 12px; }
+
+  .item {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px 14px; margin-bottom: 8px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .item .accent { width: 3px; align-self: stretch; border-radius: 2px; flex: none; }
+  .item .body { flex: 1; }
+  .item .text { font-size: 14px; }
+  .item .src { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .item .src a { color: var(--text-secondary); text-decoration: none; border-bottom: 1px solid var(--grid); }
+  .item .note { font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-style: italic; }
+  .badge {
+    flex: none; font-size: 11px; font-weight: 600; border-radius: 6px; padding: 3px 8px;
+    border: 1px solid var(--border); color: var(--text-secondary); white-space: nowrap;
+  }
+  .badge.maybe { border-color: var(--status-warning); color: var(--text-primary); }
+  .badge.maybe::before { content: "◐ "; color: var(--status-warning); }
+  .badge.open::before { content: "○ "; }
+  .badge.done { border-color: var(--status-good); }
+  .badge.done::before { content: "✓ "; color: var(--status-good); }
+  .badge.superseded::before { content: "⇢ "; }
+
+  details.cleared { margin-top: 24px; }
+  details.cleared summary {
+    cursor: pointer; font-size: 13px; font-weight: 650; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: .04em; padding: 6px 0;
+  }
+  .cleared .item { opacity: .75; }
+
+  footer { margin-top: 30px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--grid); padding-top: 12px; }
+  @media (max-width: 720px) { .tiles { grid-template-columns: repeat(2, 1fr); } .barrow { grid-template-columns: 110px 1fr 30px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Contour Insoles — Action Items</h1>
+    <div class="sub">Everything owed from Contour calls (calls with arien.smith336@gmail.com invited), grouped by owner.</div>
+    <div class="meta-line" id="metaLine"></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="panel">
+    <h2>Open items by owner</h2>
+    <div id="ownerBars"></div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div id="itemList"></div>
+
+  <details class="cleared" id="clearedWrap">
+    <summary id="clearedSummary"></summary>
+    <div id="clearedList" style="margin-top:10px"></div>
+  </details>
+
+  <footer>
+    Refreshes automatically every Tuesday end of day: new action items from the week's calls are added, and items reported done on later calls are cleared.
+    Items marked <strong>◐ possibly done</strong> have indirect evidence of completion — confirm and they'll be cleared on the next refresh.
+    Source: Fathom call recordings (links jump to the moment the item was assigned).
+  </footer>
+</div>
+
+<script type="application/json" id="dashboard-state">
+{
+  "generated": "2026-07-14",
+  "lookback_days": 30,
+  "invitee_filter": "arien.smith336@gmail.com",
+  "excluded_owners": ["Drew Barrett", "Christian Juzang"],
+  "calls": [
+    {"id": 738544076, "recording_id": 162047823, "title": "Insoles Discussion Standing Meeting", "date": "2026-07-08", "url": "https://fathom.video/calls/738544076"},
+    {"id": 720366772, "recording_id": 157663610, "title": "Insoles Discussion Standing Meeting", "date": "2026-06-23", "url": "https://fathom.video/calls/720366772"},
+    {"id": 717373531, "recording_id": 157238126, "title": "Arien <> Trung Weekly", "date": "2026-06-22", "url": "https://fathom.video/calls/717373531"},
+    {"id": 711148994, "recording_id": 155703182, "title": "Insoles Discussion Standing Meeting", "date": "2026-06-16", "url": "https://fathom.video/calls/711148994"}
+  ],
+  "items": [
+    {"id": "738544076-3376", "owner": "Drew Barrett", "text": "Send creator proposal to Trung; then Trung sends Contour proposal back", "call": 738544076, "ts": 3376, "status": "open"},
+    {"id": "738544076-3605", "owner": "Ben Kriegler", "text": "Schedule creative pillar planning call with Drew, Kostas, Arien", "call": 738544076, "ts": 3605, "status": "open"},
+    {"id": "738544076-3663", "owner": "Trung Tran", "text": "Send study / analytics / ad data to Drew", "call": 738544076, "ts": 3663, "status": "open"},
+    {"id": "738544076-4049", "owner": "Ben Kriegler", "text": "Send advertorial code + assets to Arien; Arien implements pages", "call": 738544076, "ts": 4049, "status": "open"},
+    {"id": "738544076-4266", "owner": "Arien Smith", "text": "Order remaining 2 trainer pairs; then have Maria ship all 4 to vetted PTs/trainers", "call": 738544076, "ts": 4266, "status": "done", "note": "Confirmed done by Trung (Jul 14): trainer pairs ordered"},
+    {"id": "738544076-4580", "owner": "Trung Tran", "text": "Ask Christian to connect with MyoDetox business contact", "call": 738544076, "ts": 4580, "status": "open"},
+    {"id": "738544076-4658", "owner": "Arien Smith", "text": "Confirm ConvertFlow funnel status with Kostas", "call": 738544076, "ts": 4658, "status": "open"},
+    {"id": "738544076-4878", "owner": "Arien Smith", "text": "Add HSA/FSA badges across site; then build dedicated HSA/FSA page", "call": 738544076, "ts": 4878, "status": "open"},
+    {"id": "738544076-4943", "owner": "Arien Smith", "text": "Update refund policy copy on site", "call": 738544076, "ts": 4943, "status": "done", "note": "Confirmed done by Trung (Jul 14)"},
+    {"id": "738544076-5113", "owner": "Trung Tran", "text": "Sign up for Front Row MD via link; then add to site", "call": 738544076, "ts": 5113, "status": "open"},
+    {"id": "720366772-593", "owner": "Ben Kriegler", "text": "Send vertical video edit + 2 thumbnails to Trung", "call": 720366772, "ts": 593, "status": "possibly-done", "note": "Was due 'today/tomorrow' on Jun 23 and wasn't re-raised on the Jul 8 call"},
+    {"id": "720366772-607", "owner": "Arien Smith", "text": "Add FSA/HSA badges + clickable top bar; then authority banner", "call": 720366772, "ts": 607, "status": "superseded", "note": "Rolled into the Jul 8 item: add HSA/FSA badges across site + dedicated page"},
+    {"id": "720366772-690", "owner": "Ben Kriegler", "text": "Add credibility badges (patent #, Dr. Tim, 100% guarantee) to main video", "call": 720366772, "ts": 690, "status": "open"},
+    {"id": "720366772-1079", "owner": "Trung Tran", "text": "Follow up with Phuong (GSI) re: Front Row MD support, FDA registration + US clinical trial", "call": 720366772, "ts": 1079, "status": "open"},
+    {"id": "720366772-1205", "owner": "Arien Smith", "text": "Publish symptoms template page; then churn out symptom pages", "call": 720366772, "ts": 1205, "status": "possibly-done", "note": "Jul 8 call: SEO page automation (GitHub + Claude Code → Shopify) is built and generating pages"},
+    {"id": "720366772-1232", "owner": "Arien Smith", "text": "Add 'Reviewed by Dr. Tim Nguyen' tag/graphic to SEO pages", "call": 720366772, "ts": 1232, "status": "open"},
+    {"id": "720366772-1345", "owner": "Trung Tran", "text": "Add CTA (book discovery call / form) to wholesale page", "call": 720366772, "ts": 1345, "status": "open"},
+    {"id": "720366772-1379", "owner": "Arien Smith", "text": "Finish affiliate app setup (commission already set to 20%)", "call": 720366772, "ts": 1379, "status": "open"},
+    {"id": "720366772-1459", "owner": "Ben Kriegler", "text": "Produce step-by-step 'How it works' video for B2B page", "call": 720366772, "ts": 1459, "status": "open"},
+    {"id": "720366772-1892", "owner": "Trung Tran", "text": "Invite Drew to next Wed 2pm meeting", "call": 720366772, "ts": 1892, "status": "done", "note": "Drew attended the Jul 8 standing meeting"},
+    {"id": "720366772-1995", "owner": "Trung Tran", "text": "Schedule PT ICP study with Samika (Humanize)", "call": 720366772, "ts": 1995, "status": "open"},
+    {"id": "717373531-364", "owner": "Arien Smith", "text": "Add FSA/HSA/Registered badges to product/checkout; ask Foxify re: app integration", "call": 717373531, "ts": 364, "status": "superseded", "note": "Rolled into the Jul 8 HSA/FSA badges item"},
+    {"id": "717373531-531", "owner": "Trung Tran", "text": "Ask Ben to test FSA/HSA/Registered/USPTO ads", "call": 717373531, "ts": 531, "status": "possibly-done", "note": "Jun 23 call: credibility statics were ready for launch"},
+    {"id": "717373531-915", "owner": "Arien Smith", "text": "Reach out to Arby, OB, Noah; send free pairs; schedule tag-team calls with Trung", "call": 717373531, "ts": 915, "status": "superseded", "note": "Jul 8: trainer vetting in progress — rolled into 'order remaining 2 trainer pairs, ship all 4'"},
+    {"id": "717373531-1508", "owner": "Arien Smith", "text": "Order wholesale boxes (4- and 10–30-pair); split 25-pair Penrose order into 3; ship by Jun 28", "call": 717373531, "ts": 1508, "status": "done", "note": "Confirmed done by Trung (Jul 14): wholesale boxes ordered"},
+    {"id": "717373531-1610", "owner": "Trung Tran", "text": "Pay for Front Row MD listing", "call": 717373531, "ts": 1610, "status": "superseded", "note": "Replaced by the Jul 8 item: sign up for Front Row MD via link, then add to site"},
+    {"id": "717373531-1725", "owner": "Trung Tran", "text": "Refund Art; send free pair to his PT; capture PT feedback", "call": 717373531, "ts": 1725, "status": "done", "note": "Confirmed done by Trung (Jul 14): Art refunded"},
+    {"id": "717373531-1912", "owner": "Trung Tran", "text": "Confirm affiliate payout % with team", "call": 717373531, "ts": 1912, "status": "done", "note": "Jun 23 call: commission confirmed at 20% ($47.80/pair)"},
+    {"id": "717373531-1933", "owner": "Arien Smith", "text": "Replace site logo PNG with SVG from Trung", "call": 717373531, "ts": 1933, "status": "done", "note": "Confirmed done by Trung (Jul 14)"},
+    {"id": "711148994-410", "owner": "Trung Tran", "text": "Hide/fix PDP bundle; publish PDP price at $239", "call": 711148994, "ts": 410, "status": "done", "note": "$239 price live — Jun 23 call reports sales at $239 with ~2x ROAS"},
+    {"id": "711148994-904", "owner": "Trung Tran", "text": "Send Wistia thumbnails to Arien; Arien updates PDP videos", "call": 711148994, "ts": 904, "status": "open"},
+    {"id": "711148994-1061", "owner": "Kostas Nikolakopulos", "text": "Send additional ad copy to Trung", "call": 711148994, "ts": 1061, "status": "done", "note": "Confirmed done by Trung (Jul 14): ad copy sent"},
+    {"id": "711148994-1517", "owner": "Ben Kriegler", "text": "Send vertical video assets to Kostas; Kostas pins 3 evergreen posts", "call": 711148994, "ts": 1517, "status": "open"},
+    {"id": "711148994-1677", "owner": "Ben Kriegler", "text": "Reach out to 10–15 creators re: 50% rev-share + free pair", "call": 711148994, "ts": 1677, "status": "superseded", "note": "Jul 8 strategy pivot: few high-credibility creators via Drew/Tribe instead of volume UGC outreach"},
+    {"id": "711148994-2227", "owner": "Kostas Nikolakopulos", "text": "Review studies; propose 3–5 advertorial angles to Trung/Ben", "call": 711148994, "ts": 2227, "status": "done", "note": "Jun 23 call: three advertorial funnels with angles planned"},
+    {"id": "711148994-2301", "owner": "Arien Smith", "text": "Confirm Shopify checkout iframe feasibility; report to Ben/Kostas", "call": 711148994, "ts": 2301, "status": "open"},
+    {"id": "711148994-2449", "owner": "Ben Kriegler", "text": "Schedule call with Lovable-style platform team for Thu/Fri", "call": 711148994, "ts": 2449, "status": "done", "note": "Confirmed done by Trung (Jul 14): call scheduled"},
+    {"id": "711148994-2553", "owner": "Kostas Nikolakopulos", "text": "Set up Stripe for HSA/FSA; add Trung; confirm", "call": 711148994, "ts": 2553, "status": "done", "note": "Jul 8 call: FSA/HSA functionality is live on the site"},
+    {"id": "711148994-3336", "owner": "Trung Tran", "text": "Define PT clinic lead-form qualification criteria; share with Ben/Kostas", "call": 711148994, "ts": 3336, "status": "done", "note": "Confirmed done by Trung (Jul 14)"},
+    {"id": "711148994-3420", "owner": "Arien Smith", "text": "Implement PDP 'Share with your PT' email capture + routing", "call": 711148994, "ts": 3420, "status": "open"},
+    {"id": "711148994-3734", "owner": "Ben Kriegler", "text": "Launch Meta lead-form ads for PT clinics at $10/day with follow-up CTA", "call": 711148994, "ts": 3734, "status": "done", "note": "Confirmed done by Trung (Jul 14): Meta lead-form ads launched"},
+    {"id": "711148994-3820", "owner": "Arien Smith", "text": "Configure UpPromote affiliate program; set commission; share with Ben", "call": 711148994, "ts": 3820, "status": "superseded", "note": "Rolled into the Jun 23 item: finish affiliate app setup (commission set at 20%)"}
+  ]
+}
+</script>
+
+<script>
+(function () {
+  var state = JSON.parse(document.getElementById('dashboard-state').textContent);
+  var OWNER_COLORS = {
+    'Arien Smith': 'var(--series-1)',
+    'Trung Tran': 'var(--series-2)',
+    'Ben Kriegler': 'var(--series-3)',
+    'Kostas Nikolakopulos': 'var(--series-4)',
+    'Derek Ramos': 'var(--series-6)'
+  };
+  var callsById = {};
+  state.calls.forEach(function (c) { callsById[c.id] = c; });
+
+  var excluded = state.excluded_owners || [];
+  var items = state.items.filter(function (i) { return excluded.indexOf(i.owner) === -1; });
+
+  var active = items.filter(function (i) { return i.status === 'open' || i.status === 'possibly-done'; });
+  var cleared = items.filter(function (i) { return i.status === 'done' || i.status === 'superseded'; });
+  var open = active.filter(function (i) { return i.status === 'open'; });
+  var maybe = active.filter(function (i) { return i.status === 'possibly-done'; });
+
+  document.getElementById('metaLine').textContent =
+    'Last refreshed ' + state.generated + ' · covering calls from the last ' + state.lookback_days +
+    ' days (' + state.calls.length + ' calls) · next refresh: Tuesday end of day';
+
+  var tiles = [
+    { label: 'Open items', value: open.length, hint: 'need action' },
+    { label: 'Possibly done', value: maybe.length, hint: 'confirm to clear' },
+    { label: 'Cleared this refresh', value: cleared.length, hint: 'done or superseded' },
+    { label: 'Calls scanned', value: state.calls.length, hint: state.calls[state.calls.length - 1].date + ' → ' + state.calls[0].date }
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map(function (t) {
+    return '<div class="tile"><div class="label">' + t.label + '</div><div class="value">' + t.value +
+      '</div><div class="hint">' + t.hint + '</div></div>';
+  }).join('');
+
+  // open-by-owner bars — roster plus any non-excluded owner appearing in the data
+  var owners = Object.keys(OWNER_COLORS);
+  items.forEach(function (i) {
+    if (owners.indexOf(i.owner) === -1) owners.push(i.owner);
+  });
+  var counts = owners.map(function (o) {
+    return { owner: o, n: open.filter(function (i) { return i.owner === o; }).length };
+  }).sort(function (a, b) { return b.n - a.n; });
+  var max = Math.max.apply(null, counts.map(function (c) { return c.n; })) || 1;
+  document.getElementById('ownerBars').innerHTML = counts.map(function (c) {
+    return '<div class="barrow"><div class="name"><span class="dot" style="background:' + OWNER_COLORS[c.owner] +
+      '"></span>' + c.owner + '</div><div class="bartrack"><div class="barfill" style="width:' +
+      (c.n / max * 100) + '%"></div></div><div class="num">' + c.n + '</div></div>';
+  }).join('');
+
+  // filters
+  var ownerFilter = 'All', statusFilter = 'all';
+  function renderFilters() {
+    var html = ['All'].concat(owners).map(function (o) {
+      return '<button class="chip' + (ownerFilter === o ? ' active' : '') + '" data-owner="' + o + '">' + o + '</button>';
+    }).join('');
+    html += '<span class="sep"></span>';
+    html += [['all', 'All statuses'], ['open', 'Open only'], ['possibly-done', 'Possibly done']].map(function (s) {
+      return '<button class="chip' + (statusFilter === s[0] ? ' active' : '') + '" data-status="' + s[0] + '">' + s[1] + '</button>';
+    }).join('');
+    document.getElementById('filters').innerHTML = html;
+  }
+  document.getElementById('filters').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.owner) ownerFilter = b.dataset.owner;
+    if (b.dataset.status) statusFilter = b.dataset.status;
+    renderFilters(); renderItems();
+  });
+
+  function itemHTML(i) {
+    var c = callsById[i.call];
+    var badge = { 'open': ['open', 'Open'], 'possibly-done': ['maybe', 'Possibly done'],
+                  'done': ['done', 'Done'], 'superseded': ['superseded', 'Superseded'] }[i.status];
+    return '<div class="item"><div class="accent" style="background:' + (OWNER_COLORS[i.owner] || 'var(--baseline)') + '"></div>' +
+      '<div class="body"><div class="text">' + i.text + '</div>' +
+      '<div class="src"><a href="' + c.url + '?timestamp=' + i.ts + '" target="_blank">' + c.title + ' · ' + c.date + '</a></div>' +
+      (i.note ? '<div class="note">' + i.note + '</div>' : '') +
+      '</div><span class="badge ' + badge[0] + '">' + badge[1] + '</span></div>';
+  }
+
+  function renderItems() {
+    var list = active.filter(function (i) {
+      return (ownerFilter === 'All' || i.owner === ownerFilter) &&
+             (statusFilter === 'all' || i.status === statusFilter);
+    });
+    var html = '';
+    owners.forEach(function (o) {
+      var mine = list.filter(function (i) { return i.owner === o; });
+      if (!mine.length) return;
+      var nOpen = mine.filter(function (i) { return i.status === 'open'; }).length;
+      html += '<div class="owner-section"><div class="owner-head"><span class="dot" style="background:' + OWNER_COLORS[o] +
+        '"></span><h3>' + o + '</h3><span class="count">' + nOpen + ' open' +
+        (mine.length - nOpen ? ' · ' + (mine.length - nOpen) + ' possibly done' : '') + '</span></div>' +
+        mine.map(itemHTML).join('') + '</div>';
+    });
+    document.getElementById('itemList').innerHTML = html ||
+      '<div class="panel" style="color:var(--text-muted)">No items match this filter.</div>';
+  }
+
+  document.getElementById('clearedSummary').textContent =
+    'Cleared this refresh (' + cleared.length + ') — done or superseded';
+  document.getElementById('clearedList').innerHTML = cleared.map(itemHTML).join('');
+
+  renderFilters(); renderItems();
+})();
+</script>
+</body>
+</html>
